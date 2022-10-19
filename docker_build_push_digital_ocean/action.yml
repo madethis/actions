@@ -22,7 +22,6 @@ runs:
       run: docker build --file Dockerfile --tag ${{ inputs.image }} --ssh default .
 
     - name: Install doctl # install the doctl on the runner
-      shell: bash
       uses: digitalocean/action-doctl@v2
       with:
         token: ${{ inputs.digital-ocean-access-token }}
