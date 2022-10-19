@@ -1,0 +1,35 @@
+name: 'Docker build & push To Digital Ocean'
+description: 'Build docker image and push to digital ocean registry'
+inputs:
+  ssh-private-key:
+    description: 'SSH Private Key'
+    required: true
+  digital-ocean-access-token:
+    description: 'Digital Ocean Access Token'
+    required: true
+  image:
+    description: 'Docker tag'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - uses: webfactory/ssh-agent@v0.5.4
+      with:
+        ssh-private-key: ${{ inputs.ssh-private-key }}
+
+    - name: Build image
+      shell: bash
+      run: docker build --file Dockerfile --tag ${{ inputs.image }} --ssh default .
+
+    - name: Install doctl # install the doctl on the runner
+      shell: bash
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ inputs.digital-ocean-access-token }}
+
+    - name: Push image
+      shell: bash
+      run: |
+        doctl registry login
+        docker push ${{ inputs.image }}
+
