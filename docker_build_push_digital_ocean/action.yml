@@ -10,6 +10,10 @@ inputs:
   image:
     description: 'Docker tag'
     required: true
+  directory:
+    description: 'Where to build the image from'
+    required: false
+    default: './'
 runs:
   using: "composite"
   steps:
@@ -19,7 +23,7 @@ runs:
 
     - name: Build image
       shell: bash
-      working-directory: ./web
+      working-directory: ${{ inputs.directory }}
       run: docker build --file Dockerfile --tag ${{ inputs.image }} --ssh default .
 
     - name: Install doctl # install the doctl on the runner
