@@ -19,7 +19,8 @@ runs:
 
     - name: Build image
       shell: bash
-      run: DOCKER_BUILDKIT=1 docker build --file Dockerfile --tag ${{ inputs.image }} --ssh default .
+      working-directory: ./web
+      run: docker build --file Dockerfile --tag ${{ inputs.image }} --ssh default .
 
     - name: Install doctl # install the doctl on the runner
       uses: digitalocean/action-doctl@v2
