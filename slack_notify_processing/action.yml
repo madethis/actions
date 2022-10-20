@@ -1,0 +1,32 @@
+name: 'Notify Slack workflow processing'
+description: 'Notify Slack that a new workflow is processing'
+inputs:
+  channel-id:
+    description: 'Channel ID of the Slack channel'
+    required: false
+    default: 'C04754J7WQL'
+outputs:
+  ts:
+    description: 'Message ID that can be updated'
+    value: ${{ steps.slack.outputs.ts }}
+runs:
+  using: "composite"
+  steps:
+    - id: slack
+      uses: slackapi/slack-github-action@v1.23.0
+      with:
+        channel-id: ${{ inputs.channel-id }}
+        payload: |
+          {
+            "username": "GitHub",
+            "text": "${{ github.workflow }} workflow started by ${{ github.actor }} @ ${{ github.event.repository.name }} via ${{ github.event_name }} to ${{ github.ref_name }} ${{ github.ref_type }} is processing",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": ":gear: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }}> workflow started by _${{ github.actor }}_ @ <${{ github.event.repository.url}}|${{ github.event.repository.name }}> via ${{ github.event_name }} to *${{ github.ref_name }}* ${{ github.ref_type }} is processing"
+                }
+              }
+            ]
+          }
