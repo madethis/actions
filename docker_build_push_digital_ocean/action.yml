@@ -24,6 +24,8 @@ runs:
     - name: Build image
       shell: bash
       working-directory: ${{ inputs.directory }}
+      env:
+        DOCKER_BUILDKIT: "1"
       run: docker build --file Dockerfile --tag ${{ inputs.image }} --ssh default .
 
     - name: Install doctl # install the doctl on the runner
@@ -33,7 +35,9 @@ runs:
 
     - name: Push image
       shell: bash
+      env:
+        DOCKER_BUILDKIT: "1"
       run: |
         doctl registry login
-        docker push ${{ inputs.image }}
+        DOCKER_BUILDKIT=1 docker push ${{ inputs.image }}
 
