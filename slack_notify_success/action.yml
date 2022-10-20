@@ -1,0 +1,36 @@
+name: 'Notify Slack workflow success'
+description: 'Notify Slack that a new workflow is completed successfully'
+inputs:
+  channel-id:
+    description: 'Channel ID of the Slack channel'
+    required: false
+    default: 'C04754J7WQL'
+  update-ts:
+    description: 'Message ID to update'
+    required: false
+outputs:
+  ts:
+    description: 'Message ID that can be updated'
+    value: ${{ steps.slack.outputs.ts }}
+runs:
+  using: "composite"
+  steps:
+    - id: slack
+      uses: slackapi/slack-github-action@v1.23.0
+      with:
+        channel-id: ${{ inputs.channel-id }}
+        update-ts: ${{ inputs.update-ts }}
+        payload: |
+          {
+            "username": "GitHub",
+            "text": "${{ github.workflow }} workflow started by ${{ github.actor }} @ ${{ github.event.repository.name }} via ${{ github.event_name }} to ${{ github.ref_name }} ${{ github.ref_type }} has completed successfully",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": ":white_check_mark: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }}> workflow started by _${{ github.actor }}_ @ <${{ github.event.repository.url}}|${{ github.event.repository.name }}> via ${{ github.event_name }} to *${{ github.ref_name }}* ${{ github.ref_type }} has completed successfully"
+                }
+              }
+            ]
+          }
