@@ -1,0 +1,24 @@
+name: Deployment patch
+description: 'Patch file for deployment'
+inputs:
+  application:
+    description: 'Application name'
+    required: true
+  filename:
+    description: 'File to patch'
+    required: true
+  patch:
+    description: 'Patch to apply'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: patch
+      shell: bash
+      run: |
+        set -eou pipefail
+        cd deployment
+
+        kubectl patch --local -f applications/${{ inputs.application }}/${{ inputs.filename }} -p '${{ inputs.patch }}' -o yaml > ${{ inputs.filename }}
+        rm applications/${{ inputs.application }}/${{ inputs.filename }}
+        mv ${{ inputs.filename }} applications/${{ inputs.application }}/

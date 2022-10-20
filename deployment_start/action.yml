@@ -1,0 +1,35 @@
+name: Deployment start
+description: 'Setup environment for deployment'
+inputs:
+  ssh-private-key:
+    description: 'SSH Private Key'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - uses: webfactory/ssh-agent@v0.5.4
+      with:
+        ssh-private-key: ${{ inputs.ssh-private-key }}
+
+    - name: Setup git user info
+      shell: bash
+      run: |
+        set -eou pipefail
+
+        git_author="$(git show -s HEAD --format='%an')" || exit 1
+        git_author_email="$(git show -s HEAD --format='%ae')" || exit 1
+
+        echo "git author: \"${git_author}\""
+        echo "git author email: \"${git_author_email}\""
+
+        git config --global user.name "$git_author"
+        git config --global user.email "$git_author_email"
+
+    - name: Install kubectl
+      uses: azure/setup-kubectl@v2.0
+      id: install
+
+    - name: Clone deployment repo
+      shell: bash
+      run: |
+        git clone git@github.com:madethis/deployment.git

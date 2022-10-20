@@ -1,0 +1,25 @@
+name: Deployment commit
+description: 'Commit deployment changes'
+runs:
+  using: "composite"
+  steps:
+    - name: Commit & push changes
+      shell: bash
+      run: |
+        set -eou pipefail
+        cd deployment
+
+        git add .
+        git diff-index --quiet HEAD || git commit -m "${{ github.event.repository.name }} ${{ github.sha }}"
+
+        for n in 1 2 3 4 5; do
+          git pull origin main --rebase && git push origin main && s=0 && break || s=$?
+          if [[ $s -ne 0 ]]; then
+            echo "Failed to push, attempt $n"
+            sleep $n
+            if [[ $n -eq 5 ]]; then
+              echo "Failed to push after 5 attempts"
+              exit $s
+            fi
+          fi
+        done
