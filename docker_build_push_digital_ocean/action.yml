@@ -29,6 +29,7 @@ runs:
       env:
         DOCKER_BUILDKIT: "1"
       run: |
+        docker buildx create --use --driver=docker-container
         docker buildx build \
           --file Dockerfile \
           --tag ${{ inputs.image }} \
