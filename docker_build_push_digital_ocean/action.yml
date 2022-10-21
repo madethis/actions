@@ -39,7 +39,7 @@ runs:
         docker buildx build \
           --file Dockerfile \
           --tag ${{ inputs.image }} \
-          --push
+          --push \
           --ssh default \
           --cache-to type=gha,scope=${{ github.ref_name }}-${{ inputs.directory }} \
           --cache-from type=gha,scope=${{ github.ref_name }}-${{ inputs.directory }} \
