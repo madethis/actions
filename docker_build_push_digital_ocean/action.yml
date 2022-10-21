@@ -41,6 +41,4 @@ runs:
           --tag ${{ inputs.image }} \
           --push \
           --ssh default \
-          --cache-to type=gha,scope=${{ github.ref_name }}-${{ inputs.directory }} \
-          --cache-from type=gha,scope=${{ github.ref_name }}-${{ inputs.directory }} \
           .
