@@ -1,0 +1,37 @@
+name: Deployment patch image
+description: 'Patch image for deployment'
+inputs:
+  application:
+    description: 'Application name'
+    required: true
+  filename:
+    description: 'File to patch'
+    required: true
+  container:
+    description: 'Container name to match'
+    required: true
+  image:
+    description: 'Image to apply'
+    required: true
+  type:
+    description: 'What type of resource type to patch'
+    required: false
+    default: 'deployment'
+runs:
+  using: "composite"
+  steps:
+    - name: patch_deployment|daemonset
+      if: inputs.type == 'deployment' || inputs.type == 'daemonset'
+      uses: 'madethis/actions/deployment_patch@main'
+      with:
+        application: ${{ inputs.application }}
+        filename: ${{ inputs.filename }}
+        patch: '{"spec":{"template":{"spec":{"containers":[{"name":"${{ inputs.container }}","image":"${{ inputs.image }}"}]}}}}'
+
+    - name: patch_cronjob
+      if: inputs.type == 'cronjob'
+      uses: 'madethis/actions/deployment_patch@main'
+      with:
+        application: ${{ inputs.application }}
+        filename: ${{ inputs.filename }}
+        patch: '{"spec":{"jobTemplate":{"spec":{"template":{"spec":{"containers":[{"name":"${{ inputs.container }}","image":"${{ inputs.image }}"}]}}}}}}'
