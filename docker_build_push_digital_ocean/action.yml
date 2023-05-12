@@ -14,6 +14,10 @@ inputs:
     description: 'Where to build the image from'
     required: false
     default: './'
+  dockerfile:
+    description: 'Which dockerfile to use, eg. `Dockerfile.with-storybook`, default: `Dockerfile`'
+    required: false
+    default: 'Dockerfile'
 runs:
   using: "composite"
   steps:
@@ -30,7 +34,7 @@ runs:
         DOCKER_BUILDKIT: "1"
       run: |
         docker buildx create --use --driver=docker-container
-        docker buildx build --file Dockerfile \
+        docker buildx build --file ${{ inputs.dockerfile }} \
           --tag ${{ inputs.image }} \
           --ssh default \
           --load \
