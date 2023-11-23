@@ -1,0 +1,20 @@
+name: Branch reset
+description: Hard reset a branch
+inputs:
+  source:
+    description: Source branch to reset from
+    required: true
+  target:
+    description: Target branch to reset
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: reset
+      shell: bash
+      run: |
+        git fetch origin ${{ inputs.source }}
+        git fetch origin ${{ inputs.target }}
+        git checkout -b ${{ inputs.target}} origin/${{ inputs.target }}
+        git reset --hard origin/${{ inputs.source }}
+        git push --force
