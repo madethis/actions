@@ -1,0 +1,39 @@
+name: Branch pull request
+description: Create pull requests automatically
+inputs:
+  token:
+    description: Token for github cli tool
+    required: true
+  source:
+    description: branch where we want to merge from
+    required: true
+  target:
+    description: branch where we want to merge to
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: check if pr exists
+      shell: bash
+      id: check
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+      run: |
+        prs=$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --head "${{ inputs.source }}" \
+            --base "${{ inputs.target }}" \
+            --json title \
+            --jq 'length')
+        if ((prs > 0)); then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: create pr
+      if: "!steps.check.outputs.skip"
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+      run: |
+        TITLE=$(python -c "s='${{ inputs.source }}'; transformed = f'{s.split(\"-\", 1)[0].upper()}-{s.split(\"-\", 2)[1]} - {s.split(\"-\", 2)[2].replace(\"-\", \" \")}'; print(transformed)")
+        gh pr create --draft --base ${{ inputs.target }} --head "${{ inputs.source }}" --title "$TITLE" --body "PR created automatically, please update description"
