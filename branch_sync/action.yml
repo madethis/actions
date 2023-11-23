@@ -1,0 +1,31 @@
+name: Branch sync
+description: Auto merge branches
+inputs:
+  source:
+    description: Source branch to merge from
+    required: true
+  target:
+    description: Target branch to merge to
+    required: true
+  user_name:
+    description: The user name for the git commit
+    required: false
+    default: "madethis-devops"
+  user_email:
+    description: The user email for the git commit
+    required: false
+    default: "devops@madethis.dk"
+runs:
+  using: "composite"
+  steps:
+    - name: merge
+      run: |
+        git config --global user.name "${{ inputs.user_name }}"
+        git config --global user.email "${{ inputs.user_email }}"
+        git fetch origin ${{ inputs.source }}
+        git fetch origin ${{ inputs.target }}
+        git checkout -b ${{ inputs.target}} origin/${{ inputs.target }}
+        git merge --no-commit --no-ff origin/${{ inputs.source }}
+        git merge --abort
+        git merge --no-ff origin/${{ inputs.source }} -m "sync from ${{ inputs.source }}"
+        git push
