@@ -1,16 +1,41 @@
 name: Branch reset
 description: Hard reset a branch
 inputs:
+  token:
+    description: Token for github cli tool
+    required: true
   source:
     description: Source branch to reset from
     required: true
   target:
     description: Target branch to reset
     required: true
+  skip_on_pull_request_label:
+    description: If any pull requests with the label exists, then skip
+    required: false
+    default: "this-is-some-non-existing-label-that-never-should-be-found"
+
 runs:
   using: "composite"
   steps:
+    - name: check if pr exists
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+      id: check
+      run: |
+        prs=$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --base "${{ inputs.target }}" \
+            --label "${{ inputs.skip_on_pull_request_label }}" \
+            --json title \
+            --jq 'length')
+        if ((prs > 0)); then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: reset
+      if: "!steps.check.outputs.skip"
       shell: bash
       run: |
         git fetch origin ${{ inputs.source }}
