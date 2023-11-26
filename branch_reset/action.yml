@@ -26,7 +26,6 @@ runs:
       run: |
         prs=$(gh pr list \
             --repo "$GITHUB_REPOSITORY" \
-            --base "${{ inputs.target }}" \
             --label "${{ inputs.skip_on_pull_request_label }}" \
             --json title \
             --jq 'length')
