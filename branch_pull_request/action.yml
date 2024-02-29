@@ -41,7 +41,7 @@ runs:
 
         const [project, number, ...rest] = inputs.source.split("-");
 
-        const key = `${key.toUpperCase()}-${number}`;
+        const key = `${project.toUpperCase()}-${number}`;
 
         const title = `${key} - ${rest.join(" ")}`;
 
