@@ -55,8 +55,8 @@ runs:
 
 
         try {
-          await exec(...cmd);
+          await exec.exec(...cmd);
         } catch (error) {
-          exec(`git commit -m "Start ${key}" --allow-empty`);
-          await exec(...cmd);
+          await exec.exec(`git commit -m "Start ${key}" --allow-empty`);
+          await exec.exec(...cmd);
         }
