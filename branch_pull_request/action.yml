@@ -59,7 +59,7 @@ runs:
         } catch (error) {
           await exec.exec(`git config --global user.name "madethis-devops"`);
           await exec.exec(`git config --global user.email "madethis-devops@localhost"`);
-          await exec.exec(`git`,  ["commit", "-m", "Start ${key}", "--allow-empty"]);
-          await exec.exec(`git`,  ["log"]);
+          await exec.exec(`git`,  ["commit", "-m", `Start ${key}`, "--allow-empty"]);
+          await exec.exec(`git`,  ["push"]);
           await exec.exec(...cmd);
         }
