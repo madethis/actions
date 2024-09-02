@@ -1,0 +1,152 @@
+name: "Create app release"
+description: |
+  Create a new app release on a local "releases" branch
+
+runs:
+  using: composite
+  steps:
+  - name: Source branch
+    uses: actions/checkout@v4
+    with:
+      path: source
+
+  - name: History checkout (without trees and blobs)
+    uses: actions/checkout@v4
+    with:
+      fetch-depth: 0 # History for changelog
+      filter: tree:0
+      path: history
+
+  - name: Checkout releases branch
+    uses: actions/checkout@v4
+    id: checkout-releases-branch
+    continue-on-error: true
+    with:
+      path: releases
+      ref: "releases"
+
+  - name: Get last release commit
+    uses: actions/github-script@v7
+    id: last-release-commit
+    with:
+      script: |
+        const fs = require("fs");
+
+        let gitLogRange = "HEAD";
+
+        try {
+          const metadata = JSON.parse(fs.readFileSync("./releases/release.json", "utf8"));
+
+          gitLogRange = `${metadata.commitId}..HEAD`
+        } catch (e) {
+          console.error(`Error reading releases/release.json`, e);
+        }
+
+        core.setOutput("git-log-range", gitLogRange);
+        core.summary.addRaw(`Git changelog range: \`${gitLogRange}\``).write();
+
+  - name: Generate git-log.txt
+    shell: bash
+    working-directory: history
+    run: |
+      git log "${{ steps.last-release-commit.outputs.git-log-range }}" > ../git-log.txt
+
+  - name: Start releases branch from current branch, if not exists
+    if: steps.checkout-releases-branch.outcome == 'failure'
+    uses: actions/checkout@v4
+    with:
+      path: releases
+
+  - name: Create release
+    shell: bash
+    working-directory: source
+    run: |
+      export TZ="Europe/Copenhagen"
+      node "${{ github.action_path }}/create-app-release.js"
+
+  - name: Release version
+    uses: actions/github-script@v7
+    id: release-version
+    with:
+      script: |
+        const fs = require("fs");
+
+        const appJson = JSON.parse(fs.readFileSync("./source/app.json", "utf8"));
+
+        core.setOutput("version", appJson.expo.version);
+
+        // Setup release metadata
+        const commitId = process.env.GITHUB_SHA;
+
+        fs.writeFileSync("./source/release.json", JSON.stringify({commitId}, null, 2));
+
+        core.summary
+          .addRaw(`Release version: \`${appJson.expo.version}\``)
+          .write()
+
+  - name: Create destination dir for new release commit
+    shell: bash
+    run: |
+      cp -r source destination
+      rm -rf destination/.git
+      cp -r releases/.git destination/.git
+
+  - name: Setup git user info
+    shell: bash
+    working-directory: source
+    run: |
+      set -eou pipefail
+
+      git_author="$(git show -s HEAD --format='%an')" || exit 1
+      git_author_email="$(git show -s HEAD --format='%ae')" || exit 1
+
+      echo "git author: \"${git_author}\""
+      echo "git author email: \"${git_author_email}\""
+
+      git config --global user.name "$git_author"
+      git config --global user.email "$git_author_email"
+
+      git config push.default current
+
+  - name: Commit & push changes
+    shell: bash
+    working-directory: destination
+    run: |
+      set -eou pipefail
+
+      # Try creating the branch (for first time)
+      git switch -c "releases" || true
+
+      echo "${{ steps.release-version.outputs.version }} " > ../message.txt
+      echo >> ../message.txt
+
+      echo "author-commit-id: ${{ github.sha }}" >> ../message.txt
+      echo >> ../message.txt
+
+      cat ../git-log.txt >> ../message.txt
+
+      git add .
+      git diff-index --quiet HEAD || git commit -F ../message.txt
+
+      branch="releases"
+
+
+      for n in 1 2 3 4 5; do
+        git pull origin "$branch" --rebase && git push origin "$branch" && s=0 && break || s=$?
+        if [[ $s -ne 0 ]]; then
+          echo "Failed to push, attempt $n"
+          sleep $n
+          if [[ $n -eq 5 ]]; then
+            echo "Failed to push after 5 attempts"
+            exit $s
+          fi
+        fi
+      done
+
+
+      tag_name="v${{ steps.release-version.outputs.version }}"
+
+      git tag -a "$tag_name" -F ../message.txt
+
+      # Push release version tag (for github release overview)
+      git push origin tag "$tag_name"
