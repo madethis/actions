@@ -130,6 +130,8 @@ runs:
 
       branch="releases"
 
+      # Push branch (for first time)
+      git push -u origin "$branch" || true
 
       for n in 1 2 3 4 5; do
         git pull origin "$branch" --rebase && git push origin "$branch" && s=0 && break || s=$?
