@@ -156,8 +156,11 @@ runs:
         // Fetch top of current branch to allow referencing current build commit as parent on releases branch
         await exec.exec("git", ["fetch", "--depth=1", "origin", process.env.GITHUB_REF]);
 
+        const newTreeResult = await exec.getExecOutput("git", ["write-tree"]);
+        const newTreeId = newTreeResult.stdout.trim();
+
         // new_commit_sha=$(git commit-tree -F ../message.txt -p "$current_commit_sha" -p "$GITHUB_SHA")
-        const newCommitShaResult = await exec.getExecOutput("git", ["commit-tree", "-F", "../message.txt", "-p", currentReleaseCommitSha, "-p", process.env.GITHUB_SHA]);
+        const newCommitShaResult = await exec.getExecOutput("git", ["commit-tree", newTreeId, "-F", "../message.txt", "-p", currentReleaseCommitSha, "-p", process.env.GITHUB_SHA]);
 
         const newCommitSha = newCommitShaResult.stdout.trim();
 
