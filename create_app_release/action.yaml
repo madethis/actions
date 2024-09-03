@@ -187,7 +187,7 @@ runs:
             console.log(`Error sync'ing ${branches.releases} branch`, e);
           }
 
-          if (pushSucess) {
+          if (pushSuccess) {
             break;
           }
 
