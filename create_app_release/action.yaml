@@ -177,14 +177,17 @@ runs:
         // for n in 1 2 3 4 5; do
         for (let n = 1; n <= 5; n++) {
           const pullResult = await exec.exec("git", ["pull", "origin", branch, "--rebase"], { silent: true, ignoreReturnCode: true });
-          if (!pullResult) {
-            if (n === 5) {
-              throw new Error(`Failed to push after 5 attempts`);
-            }
 
-            console.log(`Failed to push, attempt ${n}`);
-            await new Promise(resolve => setTimeout(resolve, n * 1000));
+          if (pullResult) {
+            break;
           }
+
+          if (n === 5) {
+            throw new Error(`Failed to push after 5 attempts`);
+          }
+
+          console.log(`Failed to push, attempt ${n}`);
+          await new Promise(resolve => setTimeout(resolve, n * 1000));
         }
 
         const version = ${{ toJSON(steps.release-version.outputs.version) }};
