@@ -153,6 +153,9 @@ runs:
         const currentReleaseCommitShaResult = await exec.getExecOutput("git", ["rev-parse", "HEAD"]);
         const currentReleaseCommitSha = currentReleaseCommitShaResult.stdout.trim();
 
+        // Fetch top of current branch to allow referencing current build commit as parent on releases branch
+        await exec.exec("git", ["fetch", "--depth=1", "origin", process.env.GITHUB_REF]);
+
         // new_commit_sha=$(git commit-tree -F ../message.txt -p "$current_commit_sha" -p "$GITHUB_SHA")
         const newCommitShaResult = await exec.getExecOutput("git", ["commit-tree", "-F", "../message.txt", "-p", currentReleaseCommitSha, "-p", process.env.GITHUB_SHA]);
 
