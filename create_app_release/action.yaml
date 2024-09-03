@@ -176,7 +176,7 @@ runs:
 
         // for n in 1 2 3 4 5; do
         for (let n = 1; n <= 5; n++) {
-          const pullResult = await exec.exec("git", ["pull", "origin", branch, "--rebase"], { silent: true, ignoreReturnCode: true });
+          const pullResult = await exec.exec("git", ["pull", "origin", branch, "--rebase"], { ignoreReturnCode: true });
 
           if (pullResult) {
             break;
