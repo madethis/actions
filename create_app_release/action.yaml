@@ -150,10 +150,13 @@ runs:
         }
 
         // current_commit_sha=$(git rev-parse HEAD)
-        const currentReleaseCommitSha = await exec.exec("git", ["rev-parse", "HEAD"]);
+        const currentReleaseCommitShaResult = await exec.getExecOutput("git", ["rev-parse", "HEAD"]);
+        const currentReleaseCommitSha = currentReleaseCommitShaResult.stdout.trim();
 
         // new_commit_sha=$(git commit-tree -F ../message.txt -p "$current_commit_sha" -p "$GITHUB_SHA")
-        const newCommitSha = await exec.exec("git", ["commit-tree", "-F", "../message.txt", "-p", currentReleaseCommitSha, "-p", process.env.GITHUB_SHA]);
+        const newCommitShaResult = await exec.getExecOutput("git", ["commit-tree", "-F", "../message.txt", "-p", currentReleaseCommitSha, "-p", process.env.GITHUB_SHA]);
+
+        const newCommitSha = newCommitShaResult.stdout.trim();
 
         // git reset --hard "$new_commit_sha"
         await exec.exec("git", ["reset", "--hard", newCommitSha]);
