@@ -1,4 +1,4 @@
-tconame: "Create app release"
+name: "Create app release"
 description: |
   Create a new app release on a local "releases" branch
 
@@ -128,28 +128,19 @@ runs:
       script: |
         process.chdir("./destination");
 
-        // # Try creating the branch (for first time)
-        // git switch -c "releases" || true
+        // Try creating the branch (for first time)
         await exec.exec("git", ["switch", "-c", "releases"], { silent: true, ignoreReturnCode: true });
 
-        // git add .
         await exec.exec("git", ["add", "."]);
 
-        // # Test for changes
-        // git diff-index --quiet HEAD
+        // Test for changes
         const hasChanges = await exec.exec("git", ["diff-index", "--quiet", "HEAD"], { silent: true, ignoreReturnCode: true });
 
-        console.log({ hasChanges });
-
-        // if [ $? -eq 0 ]; then
-        //   echo "No changes to commit"
-        // else
         if (!hasChanges) {
           console.log("No changes to commit");
           return;
         }
 
-        // current_commit_sha=$(git rev-parse HEAD)
         const currentReleaseCommitShaResult = await exec.getExecOutput("git", ["rev-parse", "HEAD"]);
         const currentReleaseCommitSha = currentReleaseCommitShaResult.stdout.trim();
 
@@ -159,12 +150,10 @@ runs:
         const newTreeResult = await exec.getExecOutput("git", ["write-tree"]);
         const newTreeId = newTreeResult.stdout.trim();
 
-        // new_commit_sha=$(git commit-tree -F ../message.txt -p "$current_commit_sha" -p "$GITHUB_SHA")
         const newCommitShaResult = await exec.getExecOutput("git", ["commit-tree", newTreeId, "-F", "../message.txt", "-p", currentReleaseCommitSha, "-p", process.env.GITHUB_SHA]);
 
         const newCommitSha = newCommitShaResult.stdout.trim();
 
-        // git reset --hard "$new_commit_sha"
         await exec.exec("git", ["reset", "--hard", newCommitSha]);
 
         const branches = {
@@ -172,10 +161,8 @@ runs:
         }
 
         // # Push branch (for first time)
-        // git push -u origin "$branch" || true
         await exec.exec("git", ["push", "-u", "origin", branches.releases], { silent: true, ignoreReturnCode: true });
 
-        // for n in 1 2 3 4 5; do
         for (let n = 1; n <= 5; n++) {
           let pushSuccess = false;
 
@@ -199,10 +186,10 @@ runs:
           await new Promise(resolve => setTimeout(resolve, n * 1000));
         }
 
+        // Tag source branch for visibility (GITHUB_SHA commit is available from fetch)
         const version = ${{ toJSON(steps.release-version.outputs.version) }};
-
-        // tag_name="v${{ steps.release-version.outputs.version }}"
         const tagName = `v${version}`;
 
-        // git tag -a "$tag_name" -F ../message.txt
-        await exec.exec("git", ["tag", "-a", tagName, "-F", "../message.txt"]);
+        await exec.exec("git", ["tag", "-a", tagName, process.env.GITHUB_SHA, "-F", "../message.txt"]);
+
+        await exec.exec("git", ["push", "origin", tagName]);
