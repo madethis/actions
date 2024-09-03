@@ -32,12 +32,14 @@ runs:
       script: |
         const fs = require("fs");
 
-        let gitLogRange = "HEAD";
+        const currentCommitSha = process.env.GITHUB_SHA
+
+        let gitLogRange = currentCommitSha
 
         try {
           const metadata = JSON.parse(fs.readFileSync("./releases/release.json", "utf8"));
 
-          gitLogRange = `${metadata.commitId}..HEAD`
+          gitLogRange = `${metadata.commitId}..${currentCommitSha}`
         } catch (e) {
           console.error(`Error reading releases/release.json`, e);
         }
