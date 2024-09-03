@@ -129,7 +129,7 @@ runs:
 
       git add .
 
-      // Test for changes
+      # Test for changes
       git diff-index --quiet HEAD
 
       if [ $? -eq 0 ]; then
