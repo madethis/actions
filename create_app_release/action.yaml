@@ -1,4 +1,4 @@
-name: "Create app release"
+tconame: "Create app release"
 description: |
   Create a new app release on a local "releases" branch
 
@@ -128,29 +128,40 @@ runs:
       cat ../git-log.txt >> ../message.txt
 
       git add .
-      git diff-index --quiet HEAD || git commit -F ../message.txt
 
-      branch="releases"
+      // Test for changes
+      git diff-index --quiet HEAD
 
-      # Push branch (for first time)
-      git push -u origin "$branch" || true
+      if [ $? -eq 0 ]; then
+        echo "No changes to commit"
+      else
+        current_commit_sha=$(git rev-parse HEAD)
+        new_commit_sha=$(git commit-tree -F ../message.txt -p "$current_commit_sha" -p "$GITHUB_SHA")
 
-      for n in 1 2 3 4 5; do
-        git pull origin "$branch" --rebase && git push origin "$branch" && s=0 && break || s=$?
-        if [[ $s -ne 0 ]]; then
-          echo "Failed to push, attempt $n"
-          sleep $n
-          if [[ $n -eq 5 ]]; then
-            echo "Failed to push after 5 attempts"
-            exit $s
+        git reset --hard "$new_commit_sha"
+
+        branch="releases"
+
+        # Push branch (for first time)
+        git push -u origin "$branch" || true
+
+        for n in 1 2 3 4 5; do
+          git pull origin "$branch" --rebase && git push origin "$branch" && s=0 && break || s=$?
+          if [[ $s -ne 0 ]]; then
+            echo "Failed to push, attempt $n"
+            sleep $n
+            if [[ $n -eq 5 ]]; then
+              echo "Failed to push after 5 attempts"
+              exit $s
+            fi
           fi
-        fi
-      done
+        done
 
 
-      tag_name="v${{ steps.release-version.outputs.version }}"
+        tag_name="v${{ steps.release-version.outputs.version }}"
 
-      git tag -a "$tag_name" -F ../message.txt
+        git tag -a "$tag_name" -F ../message.txt
 
-      # Push release version tag (for github release overview)
-      git push origin tag "$tag_name"
+        # Push release version tag (for github release overview)
+        git push origin tag "$tag_name"
+      fi
