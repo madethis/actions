@@ -167,18 +167,27 @@ runs:
         // git reset --hard "$new_commit_sha"
         await exec.exec("git", ["reset", "--hard", newCommitSha]);
 
-        // branch="releases"
-        const branch = "releases";
+        const branches = {
+          releases: "releases",
+        }
 
         // # Push branch (for first time)
         // git push -u origin "$branch" || true
-        await exec.exec("git", ["push", "-u", "origin", branch], { silent: true, ignoreReturnCode: true });
+        await exec.exec("git", ["push", "-u", "origin", branches.releases], { silent: true, ignoreReturnCode: true });
 
         // for n in 1 2 3 4 5; do
         for (let n = 1; n <= 5; n++) {
-          const pullResult = await exec.exec("git", ["pull", "origin", branch, "--rebase"], { ignoreReturnCode: true });
+          let pushSuccess = false;
 
-          if (pullResult) {
+          try {
+            await exec.exec("git", ["pull", "origin", branches.releases, "--rebase"] );
+            await exec.exec("git", ["push", "origin", branches.releases]);
+            pushSuccess = true;
+          } catch (e) {
+            console.log(`Error sync'ing ${branches.releases} branch`, e);
+          }
+
+          if (pushSucess) {
             break;
           }
 
@@ -192,8 +201,8 @@ runs:
 
         const version = ${{ toJSON(steps.release-version.outputs.version) }};
 
-        //   tag_name="v${{ steps.release-version.outputs.version }}"
+        // tag_name="v${{ steps.release-version.outputs.version }}"
         const tagName = `v${version}`;
 
-        //   git tag -a "$tag_name" -F ../message.txt
+        // git tag -a "$tag_name" -F ../message.txt
         await exec.exec("git", ["tag", "-a", tagName, "-F", "../message.txt"]);
