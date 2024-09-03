@@ -110,15 +110,10 @@ runs:
 
       git config push.default current
 
-  - name: Commit & push changes
-    shell: bash
+  - name: Generate commit message.txt
     working-directory: destination
+    shell: bash
     run: |
-      set -eou pipefail
-
-      # Try creating the branch (for first time)
-      git switch -c "releases" || true
-
       echo "${{ steps.release-version.outputs.version }} " > ../message.txt
       echo >> ../message.txt
 
@@ -127,41 +122,69 @@ runs:
 
       cat ../git-log.txt >> ../message.txt
 
-      git add .
+  - name: Commit & push changes
+    uses: actions/github-script@v7
+    working-directory: destination
+    with:
+      script: |
+        // # Try creating the branch (for first time)
+        // git switch -c "releases" || true
+        await exec.exec("git", ["switch", "-c", "releases"], { silent: true, ignoreReturnCode: true });
 
-      # Test for changes
-      git diff-index --quiet HEAD
+        // git add .
+        await exec.exec("git", ["add", "."]);
 
-      if [ $? -eq 0 ]; then
-        echo "No changes to commit"
-      else
-        current_commit_sha=$(git rev-parse HEAD)
-        new_commit_sha=$(git commit-tree -F ../message.txt -p "$current_commit_sha" -p "$GITHUB_SHA")
+        // # Test for changes
+        // git diff-index --quiet HEAD
+        const hasChanges = await exec.exec("git", ["diff-index", "--quiet", "HEAD"], { silent: true, ignoreReturnCode: true });
 
-        git reset --hard "$new_commit_sha"
+        console.log({ hasChanges });
 
-        branch="releases"
+        // if [ $? -eq 0 ]; then
+        //   echo "No changes to commit"
+        // else
+        if (!hasChanges) {
+          console.log("No changes to commit");
+          return;
+        }
 
-        # Push branch (for first time)
-        git push -u origin "$branch" || true
+        // current_commit_sha=$(git rev-parse HEAD)
+        const currentReleaseCommitSha = await exec.exec("git", ["rev-parse", "HEAD"]);
 
-        for n in 1 2 3 4 5; do
-          git pull origin "$branch" --rebase && git push origin "$branch" && s=0 && break || s=$?
-          if [[ $s -ne 0 ]]; then
-            echo "Failed to push, attempt $n"
-            sleep $n
-            if [[ $n -eq 5 ]]; then
-              echo "Failed to push after 5 attempts"
-              exit $s
-            fi
-          fi
-        done
+        // new_commit_sha=$(git commit-tree -F ../message.txt -p "$current_commit_sha" -p "$GITHUB_SHA")
+        const newCommitSha = await exec.exec("git", ["commit-tree", "-F", "../message.txt", "-p", currentReleaseCommitSha, "-p", process.env.GITHUB_SHA]);
+
+        // git reset --hard "$new_commit_sha"
+        await exec.exec("git", ["reset", "--hard", newCommitSha]);
+
+        // branch="releases"
+        const branch = "releases";
+
+        // # Push branch (for first time)
+        // git push -u origin "$branch" || true
+        await exec.exec("git", ["push", "-u", "origin", branch], { silent: true, ignoreReturnCode: true });
+
+        // for n in 1 2 3 4 5; do
+        for (let n = 1; n <= 5; n++) {
+          const pullResult = await exec.exec("git", ["pull", "origin", branch, "--rebase"], { silent: true, ignoreReturnCode: true });
+          if (!pullResult) {
+            if (n === 5) {
+              throw new Error(`Failed to push after 5 attempts`);
+            }
+
+            console.log(`Failed to push, attempt ${n}`);
+            await new Promise(resolve => setTimeout(resolve, n * 1000));
+          }
+        }
+
+        const version = ${{ toJSON(steps.release-version.outputs.version) }};
+
+        //   tag_name="v${{ steps.release-version.outputs.version }}"
+        const tagName = `v${version}`;
+
+        //   git tag -a "$tag_name" -F ../message.txt
+        await exec.exec("git", ["tag", "-a", tagName, "-F", "../message.txt"]);
 
 
-        tag_name="v${{ steps.release-version.outputs.version }}"
 
-        git tag -a "$tag_name" -F ../message.txt
 
-        # Push release version tag (for github release overview)
-        git push origin tag "$tag_name"
-      fi
