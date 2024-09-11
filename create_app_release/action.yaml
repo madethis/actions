@@ -1,6 +1,11 @@
 name: "Create app release"
 description: |
   Create a new app release on a local "releases" branch
+inputs:
+
+  message:
+    description: Extra message to add to the release commit message, eg. closes ABC-123, closes ABC-567
+    required: false
 
 runs:
   using: composite
@@ -115,6 +120,10 @@ runs:
     shell: bash
     run: |
       echo "${{ steps.release-version.outputs.version }} " > ../message.txt
+      echo >> ../message.txt
+
+      echo "${{ inputs.message }}" >> ../message.txt
+
       echo >> ../message.txt
 
       echo "author-commit-id: ${{ github.sha }}" >> ../message.txt
