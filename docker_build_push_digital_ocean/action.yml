@@ -46,6 +46,7 @@ runs:
           --cache-from type=gha,scope=${{ github.ref_name }}-${{ inputs.directory }} \
           --secret id=sentry-auth-token,env=SENTRY_AUTH_TOKEN \
           --build-arg CI \
+          --build-arg SENTRY_RELEASE=$GITHUB_SHA \
           .
 
     - name: Install doctl # install the doctl on the runner
