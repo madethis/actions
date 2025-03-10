@@ -1,26 +1,26 @@
-name: 'Docker build & push To Digital Ocean'
-description: 'Build docker image and push to digital ocean registry'
+name: "Docker build & push To Digital Ocean"
+description: "Build docker image and push to digital ocean registry"
 inputs:
   ssh-private-key:
-    description: 'SSH Private Key'
+    description: "SSH Private Key"
     required: true
   digital-ocean-access-token:
-    description: 'Digital Ocean Access Token'
+    description: "Digital Ocean Access Token"
     required: true
   sentry-auth-token:
-    description: 'Sentry auth token'
+    description: "Sentry auth token"
     required: false
   image:
-    description: 'Docker tag'
+    description: "Docker tag"
     required: true
   directory:
-    description: 'Where to build the image from'
+    description: "Where to build the image from"
     required: false
-    default: './'
+    default: "./"
   dockerfile:
-    description: 'Dockerfile'
+    description: "Dockerfile"
     required: false
-    default: 'Dockerfile'
+    default: "Dockerfile"
 runs:
   using: "composite"
   steps:
@@ -45,6 +45,7 @@ runs:
           --cache-to type=gha,scope=${{ github.ref_name }}-${{ inputs.directory }} \
           --cache-from type=gha,scope=${{ github.ref_name }}-${{ inputs.directory }} \
           --secret id=sentry-auth-token,env=SENTRY_AUTH_TOKEN \
+          --build-arg CI \
           .
 
     - name: Install doctl # install the doctl on the runner
@@ -57,4 +58,3 @@ runs:
       run: |
         doctl registry login
         DOCKER_BUILDKIT=1 docker push ${{ inputs.image }}
-
