@@ -7,6 +7,9 @@ inputs:
   digital-ocean-access-token:
     description: 'Digital Ocean Access Token'
     required: true
+  sentry-auth-token:
+    description: 'Sentry auth token'
+    required: false
   image:
     description: 'Docker tag'
     required: true
@@ -32,6 +35,7 @@ runs:
       working-directory: ${{ inputs.directory }}
       env:
         DOCKER_BUILDKIT: "1"
+        SENTRY_AUTH_TOKEN: ${{ inputs.sentry-auth-token }}
       run: |
         docker buildx create --use --driver=docker-container
         docker buildx build --file ${{ inputs.dockerfile }} \
@@ -40,6 +44,7 @@ runs:
           --load \
           --cache-to type=gha,scope=${{ github.ref_name }}-${{ inputs.directory }} \
           --cache-from type=gha,scope=${{ github.ref_name }}-${{ inputs.directory }} \
+          --secret id=sentry-auth-token,env=SENTRY_AUTH_TOKEN \
           .
 
     - name: Install doctl # install the doctl on the runner
